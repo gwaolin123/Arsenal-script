@@ -1,4 +1,4 @@
--- ARSENAL COMPLETE SCRIPT - ESP, AIMBOT, FLY, SPEED (CodeX/Hydrogen)
+-- ARSENAL SCRIPT - TEAM CHECK AIMBOT + COLOR ESP (CodeX/Hydrogen)
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -66,15 +66,15 @@ speedBtn.Text = "SPEED: OFF"
 speedBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
 speedBtn.Parent = mainFrame
 
--- ESP (Text labels)
+-- ESP with team colors
 local espLabels = {}
 local function createESP(player)
     if player == LocalPlayer then return end
+    
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0, 120, 0, 22)
     label.BackgroundColor3 = Color3.new(0, 0, 0)
     label.BackgroundTransparency = 0.5
-    label.TextColor3 = Color3.new(1, 0, 0)
     label.BorderSizePixel = 1
     label.Parent = screenGui
     label.Font = Enum.Font.GothamBold
@@ -86,10 +86,18 @@ local function createESP(player)
             if label then label.Visible = false end
             return
         end
+        
+        -- Check team (red = enemy, blue = teammate)
+        local isEnemy = true
+        if player.Team and LocalPlayer.Team then
+            isEnemy = player.Team ~= LocalPlayer.Team
+        end
+        
         local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
         if onScreen then
             label.Position = UDim2.new(0, rootPos.X - 60, 0, rootPos.Y - 40)
             label.Text = player.Name
+            label.TextColor3 = isEnemy and Color3.new(1, 0, 0) or Color3.new(0, 0.5, 1)
             label.Visible = true
         else
             label.Visible = false
@@ -97,20 +105,28 @@ local function createESP(player)
     end)
 end
 
--- Aimbot
-local function getClosestPlayer()
+-- Aimbot (enemies only)
+local function getClosestEnemy()
     local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local closest = nil
-    local shortestDist = 200
+    local shortestDist = 250
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
-            if onScreen then
-                local dist = (Vector2.new(rootPos.X, rootPos.Y) - center).Magnitude
-                if dist < shortestDist then
-                    shortestDist = dist
-                    closest = player
+            -- Check if enemy
+            local isEnemy = true
+            if player.Team and LocalPlayer.Team then
+                isEnemy = player.Team ~= LocalPlayer.Team
+            end
+            
+            if isEnemy then
+                local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                if onScreen then
+                    local dist = (Vector2.new(rootPos.X, rootPos.Y) - center).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        closest = player
+                    end
                 end
             end
         end
@@ -118,13 +134,15 @@ local function getClosestPlayer()
     return closest
 end
 
+-- Aimbot loop (only shoots enemies)
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled then return end
-    local target = getClosestPlayer()
+    local target = getClosestEnemy()
     if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
         local targetPos = target.Character.HumanoidRootPart.Position
         local lookVector = (targetPos - Camera.CFrame.Position).Unit
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + lookVector)
+        local newCFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + lookVector)
+        Camera.CFrame = Camera.CFrame:Lerp(newCFrame, 0.8)
         VirtualUser:Button1Down(Vector2.new(0,0))
         wait(0.01)
         VirtualUser:Button1Up(Vector2.new(0,0))
@@ -199,7 +217,10 @@ flyBtn.MouseButton1Click:Connect(function()
     flyBtn.Text = flyEnabled and "FLY: ON" or "FLY: OFF"
     flyBtn.BackgroundColor3 = flyEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     if flyEnabled then
+        flying = true
         fly()
+    else
+        flying = false
     end
 end)
 
@@ -209,6 +230,11 @@ speedBtn.MouseButton1Click:Connect(function()
     speedBtn.BackgroundColor3 = speedEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     if speedEnabled then
         setSpeed()
+    else
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = 16
+        end
     end
 end)
 
@@ -233,4 +259,4 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("Arsenal script loaded. Password: astro - ESP, Aimbot, Fly, Speed included.")
+print("Arsenal script loaded. ESP: Red=enemy, Blue=teammate. Aimbot targets enemies only.")
