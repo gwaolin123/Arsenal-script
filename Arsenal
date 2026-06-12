@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - AIMBOT ONLY ON ENEMIES (Team Check via Character Color)
+-- ARSENAL SCRIPT - AIMBOT + AUTO FIRE ON ENEMIES ONLY
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -73,29 +73,13 @@ local speedBtn = createButton("SpeedBtn", 180, "SPEED: OFF")
 
 espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
 
--- CHECK IF PLAYER IS ENEMY (based on character color or team)
+-- CHECK IF PLAYER IS ENEMY
 local function isEnemy(player)
     if player == LocalPlayer then return false end
-    local char = player.Character
-    if not char then return true end
-    
-    -- Check if player has a humanoid and is not on same team via UI
-    local isTeammate = false
     if player.Team and LocalPlayer.Team then
-        if player.Team == LocalPlayer.Team then
-            isTeammate = true
-        end
+        return player.Team ~= LocalPlayer.Team
     end
-    
-    -- Alternative: Check highlight color or name tag
-    local highlight = char:FindFirstChild("Highlight")
-    if highlight then
-        if highlight.FillColor == Color3.new(0, 0.5, 1) then
-            isTeammate = true
-        end
-    end
-    
-    return not isTeammate
+    return true
 end
 
 -- CHECK IF ENEMY IS VISIBLE (NOT BEHIND WALL)
@@ -140,7 +124,6 @@ local function updateESP()
             if espEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
                 if onScreen then
-                    -- Color: Red for enemy, Blue for teammate
                     local isEnemyPlayer = isEnemy(player)
                     label.TextColor3 = isEnemyPlayer and Color3.new(1, 0, 0) or Color3.new(0, 0.5, 1)
                     label.Text = player.Name
@@ -156,7 +139,7 @@ local function updateESP()
     end
 end
 
--- AIMBOT (ONLY VISIBLE ENEMIES)
+-- AIMBOT + AUTO FIRE (ONLY VISIBLE ENEMIES)
 local function getClosestVisibleEnemy()
     local closest = nil
     local shortestDist = math.huge
@@ -175,16 +158,29 @@ local function getClosestVisibleEnemy()
     return closest
 end
 
+-- Auto fire control
+local isFiring = false
+
 RunService.RenderStepped:Connect(function()
     updateESP()
     if aimbotEnabled then
         local target = getClosestVisibleEnemy()
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            -- Aim at target
             local targetPos = target.Character.HumanoidRootPart.Position
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+            
+            -- Auto fire continuously while target exists
+            if not isFiring then
+                isFiring = true
+            end
             VirtualUser:Button1Down(Vector2.new(0,0))
             wait(0.01)
             VirtualUser:Button1Up(Vector2.new(0,0))
+        else
+            if isFiring then
+                isFiring = false
+            end
         end
     end
 end)
@@ -342,4 +338,4 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("Arsenal script loaded. Aimbot targets ENEMIES ONLY (red ESP). Teammates are blue and ignored by aimbot.")
+print("Arsenal script loaded. Aimbot + Auto Fire: When enemy is detected, aimbot locks on AND automatically fires continuously.")
