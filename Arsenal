@@ -1,4 +1,4 @@
--- ARSENAL COMPLETE - ESP + AIMBOT + FLY + SPEED (FULLY WORKING)
+-- ARSENAL SCRIPT - AIMBOT ONLY VISIBLE ENEMIES (not behind walls)
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -54,6 +54,27 @@ local speedBtn = createButton("SpeedBtn", 180, "SPEED: OFF")
 
 espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
 
+-- Check if enemy is visible (not behind wall)
+local function isVisible(player)
+    local char = player.Character
+    if not char or not char:FindFirstChild("Head") then return false end
+    
+    local headPos = char.Head.Position
+    local cameraPos = Camera.CFrame.Position
+    local direction = (headPos - cameraPos).Unit
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, char}
+    
+    local rayResult = workspace:Raycast(cameraPos, direction * 500, raycastParams)
+    if rayResult then
+        local distanceToHit = (rayResult.Position - cameraPos).Magnitude
+        local distanceToTarget = (headPos - cameraPos).Magnitude
+        return distanceToHit >= distanceToTarget - 2
+    end
+    return true
+end
+
 -- ESP (Text labels on screen)
 local espLabels = {}
 local function updateESP()
@@ -93,8 +114,8 @@ local function updateESP()
     end
 end
 
--- AIMBOT
-local function getClosestEnemy()
+-- AIMBOT (only visible enemies)
+local function getClosestVisibleEnemy()
     local closest = nil
     local shortestDist = math.huge
     for _, player in pairs(Players:GetPlayers()) do
@@ -103,7 +124,7 @@ local function getClosestEnemy()
             if player.Team and LocalPlayer.Team then
                 isEnemy = player.Team ~= LocalPlayer.Team
             end
-            if isEnemy then
+            if isEnemy and isVisible(player) then
                 local enemyPos = player.Character.HumanoidRootPart.Position
                 local dist = (enemyPos - Camera.CFrame.Position).Magnitude
                 if dist < shortestDist then
@@ -119,7 +140,7 @@ end
 RunService.RenderStepped:Connect(function()
     updateESP()
     if aimbotEnabled then
-        local target = getClosestEnemy()
+        local target = getClosestVisibleEnemy()
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             local targetPos = target.Character.HumanoidRootPart.Position
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
@@ -183,7 +204,7 @@ local function resetSpeed()
     end
 end
 
--- BUTTON HANDLERS (USING ACTIVATED)
+-- BUTTON HANDLERS
 espBtn.Activated:Connect(function()
     espEnabled = not espEnabled
     espBtn.Text = espEnabled and "ESP: ON" or "ESP: OFF"
@@ -223,7 +244,7 @@ speedBtn.Activated:Connect(function()
     end
 end)
 
--- DRAG FUNCTIONALITY (touch and drag anywhere on mainFrame)
+-- DRAG FUNCTIONALITY
 local dragStart = nil
 local frameStart = nil
 local isDragging = false
@@ -249,7 +270,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Cleanup on player leave
+-- Cleanup
 Players.PlayerRemoving:Connect(function(player)
     if espLabels[player] then
         espLabels[player]:Destroy()
@@ -257,4 +278,4 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("SCRIPT LOADED. Touch buttons to toggle features. Drag the black box by touching anywhere on it. ESP: Red=enemy, Blue=teammate.")
+print("SCRIPT LOADED. Aimbot now only targets enemies NOT behind walls/cover. Touch buttons to toggle features.")
