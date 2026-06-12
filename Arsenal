@@ -1,4 +1,4 @@
--- ARSENAL WALLHACK + AIMBOT (All features OFF by default) - CodeX/Hydrogen
+-- ARSENAL SCRIPT - WORKING BUTTONS + TOGGLE GUI (CodeX/Hydrogen)
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -14,6 +14,7 @@ local aimbotEnabled = false
 local flyEnabled = false
 local speedEnabled = false
 local speedValue = 50
+local guiVisible = true
 
 -- GUI
 local screenGui = Instance.new("ScreenGui")
@@ -21,10 +22,10 @@ screenGui.Name = "ArsenalWallhack"
 screenGui.Parent = game:GetService("CoreGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 200)
+mainFrame.Size = UDim2.new(0, 200, 0, 230)
 mainFrame.Position = UDim2.new(0, 10, 0, 80)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-mainFrame.BackgroundTransparency = 0.3
+mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 2
 mainFrame.BorderColor3 = Color3.new(1, 0.5, 0)
 mainFrame.Parent = screenGui
@@ -38,35 +39,47 @@ title.TextColor3 = Color3.new(1, 1, 0)
 title.BackgroundTransparency = 1
 title.Parent = mainFrame
 
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 50, 0, 25)
+closeBtn.Position = UDim2.new(0.7, 0, 0, 2)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Parent = mainFrame
+closeBtn.MouseButton1Click:Connect(function()
+    guiVisible = not guiVisible
+    mainFrame.Visible = guiVisible
+end)
+
 local wallBtn = Instance.new("TextButton")
-wallBtn.Size = UDim2.new(0, 170, 0, 30)
-wallBtn.Position = UDim2.new(0, 15, 0, 40)
+wallBtn.Size = UDim2.new(0, 170, 0, 35)
+wallBtn.Position = UDim2.new(0, 15, 0, 45)
 wallBtn.Text = "WALLHACK: OFF"
 wallBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
 wallBtn.Parent = mainFrame
 
 local aimBtn = Instance.new("TextButton")
-aimBtn.Size = UDim2.new(0, 170, 0, 30)
-aimBtn.Position = UDim2.new(0, 15, 0, 80)
+aimBtn.Size = UDim2.new(0, 170, 0, 35)
+aimBtn.Position = UDim2.new(0, 15, 0, 90)
 aimBtn.Text = "AIMBOT: OFF"
 aimBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
 aimBtn.Parent = mainFrame
 
 local flyBtn = Instance.new("TextButton")
-flyBtn.Size = UDim2.new(0, 170, 0, 30)
-flyBtn.Position = UDim2.new(0, 15, 0, 120)
+flyBtn.Size = UDim2.new(0, 170, 0, 35)
+flyBtn.Position = UDim2.new(0, 15, 0, 135)
 flyBtn.Text = "FLY: OFF"
 flyBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
 flyBtn.Parent = mainFrame
 
 local speedBtn = Instance.new("TextButton")
-speedBtn.Size = UDim2.new(0, 170, 0, 30)
-speedBtn.Position = UDim2.new(0, 15, 0, 160)
+speedBtn.Size = UDim2.new(0, 170, 0, 35)
+speedBtn.Position = UDim2.new(0, 15, 0, 180)
 speedBtn.Text = "SPEED: OFF"
 speedBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
 speedBtn.Parent = mainFrame
 
--- WALLHACK: Boxes around players through walls
+-- WALLHACK (Boxes through walls)
 local wallhackObjects = {}
 local function createWallhack(player)
     if player == LocalPlayer then return end
@@ -85,7 +98,6 @@ local function createWallhack(player)
     distanceText.Center = true
     distanceText.Color = Color3.new(1, 1, 0)
     
-    -- Initially invisible
     box.Visible = false
     nameTag.Visible = false
     distanceText.Visible = false
@@ -94,46 +106,50 @@ local function createWallhack(player)
     
     RunService.RenderStepped:Connect(function()
         if not wallhackEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-            if box then box.Visible = false end
-            if nameTag then nameTag.Visible = false end
-            if distanceText then distanceText.Visible = false end
+            if box then 
+                pcall(function()
+                    box.Visible = false
+                    nameTag.Visible = false
+                    distanceText.Visible = false
+                end)
+            end
             return
         end
         
-        -- Team colors: Red = enemy, Blue = teammate
-        local isEnemy = true
-        if player.Team and LocalPlayer.Team then
-            isEnemy = player.Team ~= LocalPlayer.Team
-        end
-        local boxColor = isEnemy and Color3.new(1, 0, 0) or Color3.new(0, 0.4, 1)
-        local nameColor = isEnemy and Color3.new(1, 0.5, 0.5) or Color3.new(0.5, 0.7, 1)
-        
-        local rootPart = player.Character.HumanoidRootPart
-        local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-        
-        -- Wallhack: always show even if behind wall
-        local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
-        local scale = 3 / math.max(distance, 1) * 5
-        local height = 5 * scale
-        local width = 3 * scale
-        
-        box.Color = boxColor
-        box.Size = Vector2.new(width * 50, height * 50)
-        box.Position = Vector2.new(screenPos.X - width * 25, screenPos.Y - height * 25)
-        box.Visible = true
-        
-        nameTag.Color = nameColor
-        nameTag.Text = player.Name .. " | " .. math.floor((player.Character.Humanoid and player.Character.Humanoid.Health) or 100)
-        nameTag.Position = Vector2.new(screenPos.X, screenPos.Y - height * 25 - 12)
-        nameTag.Visible = true
-        
-        distanceText.Text = math.floor(distance) .. "m"
-        distanceText.Position = Vector2.new(screenPos.X, screenPos.Y + height * 25 + 8)
-        distanceText.Visible = true
+        pcall(function()
+            local isEnemy = true
+            if player.Team and LocalPlayer.Team then
+                isEnemy = player.Team ~= LocalPlayer.Team
+            end
+            local boxColor = isEnemy and Color3.new(1, 0, 0) or Color3.new(0, 0.4, 1)
+            local nameColor = isEnemy and Color3.new(1, 0.5, 0.5) or Color3.new(0.5, 0.7, 1)
+            
+            local rootPart = player.Character.HumanoidRootPart
+            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+            
+            local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
+            local scale = 3 / math.max(distance, 1) * 5
+            local height = 5 * scale
+            local width = 3 * scale
+            
+            box.Color = boxColor
+            box.Size = Vector2.new(width * 50, height * 50)
+            box.Position = Vector2.new(screenPos.X - width * 25, screenPos.Y - height * 25)
+            box.Visible = true
+            
+            nameTag.Color = nameColor
+            nameTag.Text = player.Name .. " | " .. math.floor((player.Character.Humanoid and player.Character.Humanoid.Health) or 100)
+            nameTag.Position = Vector2.new(screenPos.X, screenPos.Y - height * 25 - 12)
+            nameTag.Visible = true
+            
+            distanceText.Text = math.floor(distance) .. "m"
+            distanceText.Position = Vector2.new(screenPos.X, screenPos.Y + height * 25 + 8)
+            distanceText.Visible = true
+        end)
     end)
 end
 
--- Aimbot: closest enemy (by 3D distance)
+-- Aimbot
 local function getClosestEnemy3D()
     local closest = nil
     local shortestDist = math.huge
@@ -144,7 +160,6 @@ local function getClosestEnemy3D()
             if player.Team and LocalPlayer.Team then
                 isEnemy = player.Team ~= LocalPlayer.Team
             end
-            
             if isEnemy then
                 local enemyPos = player.Character.HumanoidRootPart.Position
                 local myPos = Camera.CFrame.Position
@@ -159,7 +174,6 @@ local function getClosestEnemy3D()
     return closest
 end
 
--- Aimbot loop
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled then return end
     local target = getClosestEnemy3D()
@@ -182,15 +196,12 @@ local function startFly()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local hrp = char.HumanoidRootPart
-    
     if bodyVelocity then bodyVelocity:Destroy() end
     if bodyGyro then bodyGyro:Destroy() end
-    
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
-    
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     bodyGyro.Parent = hrp
@@ -210,7 +221,12 @@ UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.Space then bodyVelocity.Velocity = Vector3.new(0, speed, 0) end
 end)
 
--- Speed hack
+local function stopFly()
+    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
+end
+
+-- Speed
 local function setSpeed()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") then
@@ -225,41 +241,35 @@ local function resetSpeed()
     end
 end
 
--- Initialize wallhack for all players
+-- Initialize wallhack
 for _, player in pairs(Players:GetPlayers()) do
     createWallhack(player)
 end
 Players.PlayerAdded:Connect(createWallhack)
 Players.PlayerRemoving:Connect(function(player)
     if wallhackObjects[player] then
-        if wallhackObjects[player].box then wallhackObjects[player].box:Remove() end
-        if wallhackObjects[player].nameTag then wallhackObjects[player].nameTag:Remove() end
-        if wallhackObjects[player].distance then wallhackObjects[player].distance:Remove() end
+        pcall(function()
+            wallhackObjects[player].box:Remove()
+            wallhackObjects[player].nameTag:Remove()
+            wallhackObjects[player].distance:Remove()
+        end)
         wallhackObjects[player] = nil
     end
 end)
 
--- Button toggles (starting from OFF)
+-- BUTTON CLICKS (WORKING)
 wallBtn.MouseButton1Click:Connect(function()
     wallhackEnabled = not wallhackEnabled
     wallBtn.Text = wallhackEnabled and "WALLHACK: ON" or "WALLHACK: OFF"
     wallBtn.BackgroundColor3 = wallhackEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-    -- Immediately show/hide boxes
-    for _, obj in pairs(wallhackObjects) do
-        if obj.box then
-            if not wallhackEnabled then
-                obj.box.Visible = false
-                obj.nameTag.Visible = false
-                obj.distance.Visible = false
-            end
-        end
-    end
+    print("Wallhack: " .. tostring(wallhackEnabled))
 end)
 
 aimBtn.MouseButton1Click:Connect(function()
     aimbotEnabled = not aimbotEnabled
     aimBtn.Text = aimbotEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
     aimBtn.BackgroundColor3 = aimbotEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    print("Aimbot: " .. tostring(aimbotEnabled))
 end)
 
 flyBtn.MouseButton1Click:Connect(function()
@@ -271,9 +281,9 @@ flyBtn.MouseButton1Click:Connect(function()
         startFly()
     else
         flying = false
-        if bodyVelocity then bodyVelocity:Destroy() end
-        if bodyGyro then bodyGyro:Destroy() end
+        stopFly()
     end
+    print("Fly: " .. tostring(flyEnabled))
 end)
 
 speedBtn.MouseButton1Click:Connect(function()
@@ -285,6 +295,7 @@ speedBtn.MouseButton1Click:Connect(function()
     else
         resetSpeed()
     end
+    print("Speed: " .. tostring(speedEnabled))
 end)
 
 -- Drag support
@@ -308,4 +319,4 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("Arsenal script loaded. ALL FEATURES OFF by default. Use GUI buttons to enable Wallhack (see enemies through walls), Aimbot, Fly, Speed.")
+print("Arsenal script loaded. Click the X button to hide/show GUI. Click any feature button to turn ON/OFF.")
