@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - HIDE/SHOW GUI + AIMBOT VISIBLE ENEMIES ONLY
+-- ARSENAL SCRIPT - FIXED CIRCLE BUTTON (TextButton instead of ImageLabel)
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -13,7 +13,6 @@ local aimbotEnabled = false
 local flyEnabled = false
 local speedEnabled = false
 local speedValue = 50
-local guiVisible = true
 
 -- GUI
 local screenGui = Instance.new("ScreenGui")
@@ -44,23 +43,17 @@ hideBtn.Text = "━"
 hideBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
 hideBtn.Parent = mainFrame
 
-local floatingCircle = Instance.new("ImageLabel")
+local floatingCircle = Instance.new("TextButton")
 floatingCircle.Size = UDim2.new(0, 55, 0, 55)
 floatingCircle.Position = UDim2.new(0.02, 0, 0.85, 0)
 floatingCircle.BackgroundColor3 = Color3.new(1, 0.5, 0)
 floatingCircle.BackgroundTransparency = 0.2
-floatingCircle.Image = "rbxassetid://0"
+floatingCircle.Text = "A"
+floatingCircle.TextColor3 = Color3.new(1, 1, 1)
+floatingCircle.TextSize = 28
+floatingCircle.TextScaled = true
 floatingCircle.Parent = screenGui
 floatingCircle.Visible = false
-
-local circleText = Instance.new("TextLabel")
-circleText.Size = UDim2.new(1, 0, 1, 0)
-circleText.Text = "A"
-circleText.TextColor3 = Color3.new(1, 1, 1)
-circleText.TextSize = 28
-circleText.TextScaled = true
-circleText.BackgroundTransparency = 1
-circleText.Parent = floatingCircle
 
 local function createButton(name, y, text)
     local btn = Instance.new("TextButton")
@@ -267,7 +260,7 @@ speedBtn.Activated:Connect(function()
     end
 end)
 
--- HIDE/SHOW GUI (Hide button and floating circle)
+-- HIDE/SHOW GUI
 hideBtn.Activated:Connect(function()
     mainFrame.Visible = false
     floatingCircle.Visible = true
@@ -338,4 +331,4 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("SCRIPT LOADED. Press ━ button to hide GUI (circle appears). Tap circle to show GUI again. Drag both main GUI and circle.")
+print("SCRIPT LOADED. Press ━ to hide GUI. Tap orange circle 'A' to show GUI again. Drag both.")
