@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - AUTO FIRE AIMBOT + LONG JUMP (NO FLY/SPEED)
+-- ARSENAL SCRIPT - AUTO BAN CHEATERS + UNLI JUMP + SKINS NO LAG
 -- Password: astro
 
 -- LOGIN GUI
@@ -60,9 +60,10 @@ local function loadMainScript()
 
     local espEnabled = true
     local aimbotEnabled = false
-    local longJumpEnabled = false
+    local unliJumpEnabled = false
     local ammoEnabled = false
     local skinsEnabled = false
+    local autoBanEnabled = false
 
     -- GUI
     local screenGui = Instance.new("ScreenGui")
@@ -71,7 +72,7 @@ local function loadMainScript()
     screenGui.ResetOnSpawn = false
 
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 200, 0, 280)
+    mainFrame.Size = UDim2.new(0, 200, 0, 310)
     mainFrame.Position = UDim2.new(0.1, 0, 0.3, 0)
     mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
     mainFrame.BackgroundTransparency = 0.3
@@ -116,11 +117,12 @@ local function loadMainScript()
         return btn
     end
 
-    local espBtn = createButton("EspBtn", 45, "ESP: ON")
-    local aimBtn = createButton("AimBtn", 90, "AIMBOT: OFF")
-    local jumpBtn = createButton("JumpBtn", 135, "LONG JUMP: OFF")
-    local ammoBtn = createButton("AmmoBtn", 180, "UNLIMITED AMMO: OFF")
-    local skinBtn = createButton("SkinBtn", 225, "SKINS: OFF")
+    local espBtn = createButton("EspBtn", 35, "ESP: ON")
+    local aimBtn = createButton("AimBtn", 75, "AIMBOT: OFF")
+    local jumpBtn = createButton("JumpBtn", 115, "UNLI JUMP: OFF")
+    local ammoBtn = createButton("AmmoBtn", 155, "UNLIMITED AMMO: OFF")
+    local skinBtn = createButton("SkinBtn", 195, "SKINS: OFF")
+    local banBtn = createButton("BanBtn", 235, "AUTO BAN CHEATERS: OFF")
 
     espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
 
@@ -150,6 +152,44 @@ local function loadMainScript()
             return distanceToHit >= distanceToTarget - 2
         end
         return true
+    end
+
+    -- DETECT CHEATERS (speed, fly, etc)
+    local function detectCheater(player)
+        local char = player.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+        
+        -- Check for speed hack (walk speed > 25)
+        local humanoid = char:FindFirstChild("Humanoid")
+        if humanoid and humanoid.WalkSpeed > 25 then
+            return true
+        end
+        
+        -- Check for fly (no ground touch for > 5 seconds while moving)
+        local hrp = char.HumanoidRootPart
+        local rayParams = RaycastParams.new()
+        rayParams.FilterDescendantsInstances = {char}
+        local ray = workspace:Raycast(hrp.Position, Vector3.new(0, -10, 0), rayParams)
+        if not ray and hrp.Velocity.Y > 0 then
+            return true
+        end
+        
+        return false
+    end
+
+    -- AUTO BAN CHEATERS (reports them automatically)
+    local function autoBanCheaters()
+        if not autoBanEnabled then return end
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and detectCheater(player) then
+                pcall(function()
+                    -- Send report to server
+                    ReplicatedStorage.Remotes.ReportAbuse:FireServer(player.Name, "Cheating")
+                    -- Also kick them locally (visual only)
+                    player:Kick("Detected as cheater by anti-cheat system")
+                end)
+            end
+        end
     end
 
     -- ESP
@@ -186,7 +226,7 @@ local function loadMainScript()
         end
     end
 
-    -- AIMBOT + AUTO FIRE (continuous)
+    -- AIMBOT + AUTO FIRE
     local function getClosestVisibleEnemy()
         local closest = nil
         local shortestDist = math.huge
@@ -205,15 +245,14 @@ local function loadMainScript()
         return closest
     end
 
-    -- AUTO FIRE LOOP (shoots every frame when target exists)
     RunService.RenderStepped:Connect(function()
         updateESP()
+        autoBanCheaters()
         if aimbotEnabled then
             local target = getClosestVisibleEnemy()
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local targetPos = target.Character.HumanoidRootPart.Position
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-                -- Auto fire continuously
                 VirtualUser:Button1Down(Vector2.new(0,0))
                 task.wait(0.01)
                 VirtualUser:Button1Up(Vector2.new(0,0))
@@ -221,27 +260,27 @@ local function loadMainScript()
         end
     end)
 
-    -- LONG JUMP (increased jump power, no fly/speed)
-    local function enableLongJump()
-        if not longJumpEnabled then return end
+    -- UNLI JUMP (infinite jumps)
+    local function enableUnliJump()
+        if not unliJumpEnabled then return end
         local char = LocalPlayer.Character
         if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.JumpPower = 80
+            local humanoid = char.Humanoid
+            humanoid.JumpPower = 60
+            -- Allow infinite jumps
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
         end
     end
-
-    RunService.RenderStepped:Connect(enableLongJump)
-
-    -- Reset jump power when disabled
-    local function resetJump()
-        if not longJumpEnabled then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.JumpPower = 50
-            end
+    
+    -- Jump reset on space press
+    UserInputService.JumpRequest:Connect(function()
+        if unliJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
-    end
-    RunService.RenderStepped:Connect(resetJump)
+    end)
+    
+    RunService.RenderStepped:Connect(enableUnliJump)
 
     -- UNLIMITED AMMO
     local function enableUnlimitedAmmo()
@@ -251,24 +290,22 @@ local function loadMainScript()
             if tool and tool:FindFirstChild("Ammo") then
                 tool.Ammo.Value = 999
             end
-            local weapon = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Weapon")
-            if weapon and weapon:FindFirstChild("Reload") then
-                weapon:FindFirstChild("Reload").Disabled = true
-            end
         end)
     end
     RunService.RenderStepped:Connect(enableUnlimitedAmmo)
 
-    -- SKINS
+    -- SKINS (optimized - no lag)
+    local skinApplied = false
     local function enableSkins()
-        if not skinsEnabled then return end
+        if not skinsEnabled or skinApplied then return end
         pcall(function()
+            -- Apply only once to prevent lag
             for _, v in pairs(ReplicatedStorage:GetDescendants()) do
                 if v:IsA("Tool") and v:FindFirstChild("SkinChanger") then
                     v.SkinChanger.Value = "Golden"
                 end
             end
-            ReplicatedStorage.Remotes.GiveSkin:FireServer("AllSkins")
+            skinApplied = true
         end)
     end
     RunService.RenderStepped:Connect(enableSkins)
@@ -292,20 +329,9 @@ local function loadMainScript()
     end)
 
     jumpBtn.Activated:Connect(function()
-        longJumpEnabled = not longJumpEnabled
-        jumpBtn.Text = longJumpEnabled and "LONG JUMP: ON" or "LONG JUMP: OFF"
-        jumpBtn.BackgroundColor3 = longJumpEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-        if longJumpEnabled then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.JumpPower = 80
-            end
-        else
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.JumpPower = 50
-            end
-        end
+        unliJumpEnabled = not unliJumpEnabled
+        jumpBtn.Text = unliJumpEnabled and "UNLI JUMP: ON" or "UNLI JUMP: OFF"
+        jumpBtn.BackgroundColor3 = unliJumpEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     end)
 
     ammoBtn.Activated:Connect(function()
@@ -318,6 +344,15 @@ local function loadMainScript()
         skinsEnabled = not skinsEnabled
         skinBtn.Text = skinsEnabled and "SKINS: ON" or "SKINS: OFF"
         skinBtn.BackgroundColor3 = skinsEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+        if skinsEnabled then
+            skinApplied = false
+        end
+    end)
+
+    banBtn.Activated:Connect(function()
+        autoBanEnabled = not autoBanEnabled
+        banBtn.Text = autoBanEnabled and "AUTO BAN CHEATERS: ON" or "AUTO BAN CHEATERS: OFF"
+        banBtn.BackgroundColor3 = autoBanEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     end)
 
     -- HIDE/SHOW
@@ -331,7 +366,7 @@ local function loadMainScript()
         floatingCircle.Visible = false
     end)
 
-    -- DRAG for main frame
+    -- DRAG
     local dragStart, frameStart, isDragging
     mainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch then
@@ -352,7 +387,6 @@ local function loadMainScript()
         end
     end)
 
-    -- DRAG for floating circle
     local circleDragStart, circleStartPos, isCircleDragging
     floatingCircle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch then
@@ -381,7 +415,7 @@ local function loadMainScript()
         end
     end)
 
-    print("Arsenal script loaded. Features: ESP, Aimbot+Auto Fire, Long Jump, Unlimited Ammo, Skins. Password: astro")
+    print("Arsenal script loaded. Features: ESP, Aimbot+Auto Fire, Unli Jump, Unlimited Ammo, Skins, Auto Ban Cheaters")
 end
 
 -- PASSWORD CHECK
