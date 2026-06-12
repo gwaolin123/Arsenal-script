@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - FIXED BUTTONS + HIDE/SHOW CIRCLE (CodeX/Hydrogen)
+-- ARSENAL SCRIPT - FULLY FIXED FOR MOBILE (CodeX/Hydrogen)
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -8,7 +8,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local VirtualUser = game:GetService("VirtualUser")
 
--- Settings (ALL OFF by default)
+-- Settings
 local wallhackEnabled = false
 local aimbotEnabled = false
 local flyEnabled = false
@@ -31,8 +31,6 @@ mainFrame.BorderSizePixel = 2
 mainFrame.BorderColor3 = Color3.new(1, 0.5, 0)
 mainFrame.Parent = screenGui
 mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Visible = true
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
@@ -46,25 +44,23 @@ hideBtn.Size = UDim2.new(0, 50, 0, 25)
 hideBtn.Position = UDim2.new(0.7, 0, 0, 2)
 hideBtn.Text = "━"
 hideBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-hideBtn.TextColor3 = Color3.new(1, 1, 1)
 hideBtn.Parent = mainFrame
 
--- Floating circle button (appears when GUI hidden)
 local floatingCircle = Instance.new("ImageLabel")
-floatingCircle.Size = UDim2.new(0, 50, 0, 50)
+floatingCircle.Size = UDim2.new(0, 55, 0, 55)
 floatingCircle.Position = UDim2.new(0.02, 0, 0.85, 0)
 floatingCircle.BackgroundColor3 = Color3.new(1, 0.5, 0)
-floatingCircle.BackgroundTransparency = 0.3
+floatingCircle.BackgroundTransparency = 0.2
 floatingCircle.Image = "rbxassetid://0"
 floatingCircle.Parent = screenGui
 floatingCircle.Visible = false
-floatingCircle.Active = true
 
 local circleText = Instance.new("TextLabel")
 circleText.Size = UDim2.new(1, 0, 1, 0)
 circleText.Text = "A"
 circleText.TextColor3 = Color3.new(1, 1, 1)
-circleText.TextSize = 24
+circleText.TextSize = 28
+circleText.TextScaled = true
 circleText.BackgroundTransparency = 1
 circleText.Parent = floatingCircle
 
@@ -153,7 +149,7 @@ local function createWallhack(player)
     end)
 end
 
--- Aimbot
+-- AIMBOT
 local function getClosestEnemy3D()
     local closest = nil
     local shortestDist = math.huge
@@ -191,7 +187,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Fly
+-- FLY
 local flying = false
 local bodyVelocity = nil
 local bodyGyro = nil
@@ -231,7 +227,7 @@ local function stopFly()
     bodyGyro = nil
 end
 
--- Speed
+-- SPEED
 local function setSpeed()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") then
@@ -245,7 +241,7 @@ local function resetSpeed()
     end
 end
 
--- Initialize wallhack
+-- INIT WALLHACK
 for _, player in pairs(Players:GetPlayers()) do
     createWallhack(player)
 end
@@ -261,20 +257,29 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- BUTTON FUNCTIONS (USING CONNECT)
-wallBtn.MouseButton1Click:Connect(function()
+-- BUTTON HANDLERS (USING TOUCHTAP FOR MOBILE)
+local function setupButton(btn, callback)
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            callback()
+        end
+    end)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+setupButton(wallBtn, function()
     wallhackEnabled = not wallhackEnabled
     wallBtn.Text = wallhackEnabled and "WALLHACK: ON" or "WALLHACK: OFF"
     wallBtn.BackgroundColor3 = wallhackEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
 end)
 
-aimBtn.MouseButton1Click:Connect(function()
+setupButton(aimBtn, function()
     aimbotEnabled = not aimbotEnabled
     aimBtn.Text = aimbotEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
     aimBtn.BackgroundColor3 = aimbotEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
 end)
 
-flyBtn.MouseButton1Click:Connect(function()
+setupButton(flyBtn, function()
     flyEnabled = not flyEnabled
     flyBtn.Text = flyEnabled and "FLY: ON" or "FLY: OFF"
     flyBtn.BackgroundColor3 = flyEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
@@ -287,7 +292,7 @@ flyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-speedBtn.MouseButton1Click:Connect(function()
+setupButton(speedBtn, function()
     speedEnabled = not speedEnabled
     speedBtn.Text = speedEnabled and "SPEED: ON" or "SPEED: OFF"
     speedBtn.BackgroundColor3 = speedEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
@@ -298,41 +303,19 @@ speedBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Hide/Show GUI + Floating Circle
-hideBtn.MouseButton1Click:Connect(function()
+setupButton(hideBtn, function()
     guiVisible = false
     mainFrame.Visible = false
     floatingCircle.Visible = true
 end)
 
-floatingCircle.MouseButton1Click:Connect(function()
+setupButton(floatingCircle, function()
     guiVisible = true
     mainFrame.Visible = true
     floatingCircle.Visible = false
 end)
 
--- Drag for floating circle
-local circleDragStart, circleStartPos, circleDragging
-floatingCircle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        circleDragging = true
-        circleDragStart = input.Position
-        circleStartPos = floatingCircle.Position
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        circleDragging = false
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if circleDragging and input.UserInputType == Enum.UserInputType.Touch then
-        local delta = input.Position - circleDragStart
-        floatingCircle.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Main menu drag
+-- DRAG for main frame
 local dragStart, startPos, dragging
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
@@ -353,4 +336,20 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("Arsenal script loaded. GUI visible. Click ━ to hide (circle appears). Click circle to restore GUI. All buttons should work now.")
+-- DRAG for floating circle
+local circleDragStart, circleStartPos, circleDragging
+floatingCircle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        circleDragging = true
+        circleDragStart = input.Position
+        circleStartPos = floatingCircle.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if circleDragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - circleDragStart
+        floatingCircle.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+print("Arsenal script loaded. Tap buttons to turn features ON/OFF. Tap ━ to hide GUI (circle appears). Tap circle to restore.")
