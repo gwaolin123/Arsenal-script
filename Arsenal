@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - AUTO FIRE + UNLIMITED AMMO + SKINS + PASSWORD
+-- ARSENAL SCRIPT - AUTO FIRE AIMBOT + LONG JUMP (NO FLY/SPEED)
 -- Password: astro
 
 -- LOGIN GUI
@@ -60,9 +60,9 @@ local function loadMainScript()
 
     local espEnabled = true
     local aimbotEnabled = false
-    local flyEnabled = false
-    local speedEnabled = false
-    local speedValue = 50
+    local longJumpEnabled = false
+    local ammoEnabled = false
+    local skinsEnabled = false
 
     -- GUI
     local screenGui = Instance.new("ScreenGui")
@@ -71,7 +71,7 @@ local function loadMainScript()
     screenGui.ResetOnSpawn = false
 
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 200, 0, 310)
+    mainFrame.Size = UDim2.new(0, 200, 0, 280)
     mainFrame.Position = UDim2.new(0.1, 0, 0.3, 0)
     mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
     mainFrame.BackgroundTransparency = 0.3
@@ -118,10 +118,9 @@ local function loadMainScript()
 
     local espBtn = createButton("EspBtn", 45, "ESP: ON")
     local aimBtn = createButton("AimBtn", 90, "AIMBOT: OFF")
-    local ammoBtn = createButton("AmmoBtn", 135, "UNLIMITED AMMO: OFF")
-    local skinBtn = createButton("SkinBtn", 180, "SKINS: OFF")
-    local flyBtn = createButton("FlyBtn", 225, "FLY: OFF")
-    local speedBtn = createButton("SpeedBtn", 270, "SPEED: OFF")
+    local jumpBtn = createButton("JumpBtn", 135, "LONG JUMP: OFF")
+    local ammoBtn = createButton("AmmoBtn", 180, "UNLIMITED AMMO: OFF")
+    local skinBtn = createButton("SkinBtn", 225, "SKINS: OFF")
 
     espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
 
@@ -187,7 +186,7 @@ local function loadMainScript()
         end
     end
 
-    -- AIMBOT + AUTO FIRE
+    -- AIMBOT + AUTO FIRE (continuous)
     local function getClosestVisibleEnemy()
         local closest = nil
         local shortestDist = math.huge
@@ -206,7 +205,7 @@ local function loadMainScript()
         return closest
     end
 
-    -- AUTO FIRE LOOP (continuous shooting)
+    -- AUTO FIRE LOOP (shoots every frame when target exists)
     RunService.RenderStepped:Connect(function()
         updateESP()
         if aimbotEnabled then
@@ -214,7 +213,7 @@ local function loadMainScript()
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local targetPos = target.Character.HumanoidRootPart.Position
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-                -- Auto fire every frame (continuous shooting)
+                -- Auto fire continuously
                 VirtualUser:Button1Down(Vector2.new(0,0))
                 task.wait(0.01)
                 VirtualUser:Button1Up(Vector2.new(0,0))
@@ -222,8 +221,29 @@ local function loadMainScript()
         end
     end)
 
-    -- UNLIMITED AMMO (hook fire remote)
-    local ammoEnabled = false
+    -- LONG JUMP (increased jump power, no fly/speed)
+    local function enableLongJump()
+        if not longJumpEnabled then return end
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.JumpPower = 80
+        end
+    end
+
+    RunService.RenderStepped:Connect(enableLongJump)
+
+    -- Reset jump power when disabled
+    local function resetJump()
+        if not longJumpEnabled then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.JumpPower = 50
+            end
+        end
+    end
+    RunService.RenderStepped:Connect(resetJump)
+
+    -- UNLIMITED AMMO
     local function enableUnlimitedAmmo()
         if not ammoEnabled then return end
         pcall(function()
@@ -231,86 +251,27 @@ local function loadMainScript()
             if tool and tool:FindFirstChild("Ammo") then
                 tool.Ammo.Value = 999
             end
-            -- Hook weapon fire to prevent ammo decrease
             local weapon = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Weapon")
             if weapon and weapon:FindFirstChild("Reload") then
                 weapon:FindFirstChild("Reload").Disabled = true
             end
         end)
     end
-
     RunService.RenderStepped:Connect(enableUnlimitedAmmo)
 
-    -- SKINS (unlock all skins locally)
-    local skinsEnabled = false
+    -- SKINS
     local function enableSkins()
         if not skinsEnabled then return end
         pcall(function()
-            local shop = ReplicatedStorage:FindFirstChild("Shop") or game:GetService("Lighting")
             for _, v in pairs(ReplicatedStorage:GetDescendants()) do
                 if v:IsA("Tool") and v:FindFirstChild("SkinChanger") then
                     v.SkinChanger.Value = "Golden"
                 end
             end
-            -- Force skin equip
             ReplicatedStorage.Remotes.GiveSkin:FireServer("AllSkins")
         end)
     end
-
     RunService.RenderStepped:Connect(enableSkins)
-
-    -- FLY
-    local flying = false
-    local bodyVel = nil
-    local bodyGyro = nil
-    local function enableFly()
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        if bodyVel then bodyVel:Destroy() end
-        if bodyGyro then bodyGyro:Destroy() end
-        bodyVel = Instance.new("BodyVelocity")
-        bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-        bodyVel.Velocity = Vector3.new(0, 0, 0)
-        bodyVel.Parent = hrp
-        bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-        bodyGyro.Parent = hrp
-        bodyGyro.CFrame = hrp.CFrame
-    end
-    local function disableFly()
-        if bodyVel then bodyVel:Destroy() end
-        if bodyGyro then bodyGyro:Destroy() end
-        bodyVel = nil
-        bodyGyro = nil
-    end
-
-    UserInputService.InputBegan:Connect(function(input)
-        if not flyEnabled then return end
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        local speed = 100
-        if input.KeyCode == Enum.KeyCode.W then bodyVel.Velocity = hrp.CFrame.LookVector * speed end
-        if input.KeyCode == Enum.KeyCode.S then bodyVel.Velocity = hrp.CFrame.LookVector * -speed end
-        if input.KeyCode == Enum.KeyCode.A then bodyVel.Velocity = hrp.CFrame.RightVector * -speed end
-        if input.KeyCode == Enum.KeyCode.D then bodyVel.Velocity = hrp.CFrame.RightVector * speed end
-        if input.KeyCode == Enum.KeyCode.Space then bodyVel.Velocity = Vector3.new(0, speed, 0) end
-    end)
-
-    -- SPEED
-    local function setSpeed()
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = speedValue
-        end
-    end
-    local function resetSpeed()
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = 16
-        end
-    end
 
     -- BUTTONS
     espBtn.Activated:Connect(function()
@@ -330,6 +291,23 @@ local function loadMainScript()
         aimBtn.BackgroundColor3 = aimbotEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     end)
 
+    jumpBtn.Activated:Connect(function()
+        longJumpEnabled = not longJumpEnabled
+        jumpBtn.Text = longJumpEnabled and "LONG JUMP: ON" or "LONG JUMP: OFF"
+        jumpBtn.BackgroundColor3 = longJumpEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+        if longJumpEnabled then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.JumpPower = 80
+            end
+        else
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.JumpPower = 50
+            end
+        end
+    end)
+
     ammoBtn.Activated:Connect(function()
         ammoEnabled = not ammoEnabled
         ammoBtn.Text = ammoEnabled and "UNLIMITED AMMO: ON" or "UNLIMITED AMMO: OFF"
@@ -340,28 +318,6 @@ local function loadMainScript()
         skinsEnabled = not skinsEnabled
         skinBtn.Text = skinsEnabled and "SKINS: ON" or "SKINS: OFF"
         skinBtn.BackgroundColor3 = skinsEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-    end)
-
-    flyBtn.Activated:Connect(function()
-        flyEnabled = not flyEnabled
-        flyBtn.Text = flyEnabled and "FLY: ON" or "FLY: OFF"
-        flyBtn.BackgroundColor3 = flyEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-        if flyEnabled then
-            enableFly()
-        else
-            disableFly()
-        end
-    end)
-
-    speedBtn.Activated:Connect(function()
-        speedEnabled = not speedEnabled
-        speedBtn.Text = speedEnabled and "SPEED: ON" or "SPEED: OFF"
-        speedBtn.BackgroundColor3 = speedEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-        if speedEnabled then
-            setSpeed()
-        else
-            resetSpeed()
-        end
     end)
 
     -- HIDE/SHOW
@@ -375,7 +331,7 @@ local function loadMainScript()
         floatingCircle.Visible = false
     end)
 
-    -- DRAG
+    -- DRAG for main frame
     local dragStart, frameStart, isDragging
     mainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch then
@@ -396,6 +352,7 @@ local function loadMainScript()
         end
     end)
 
+    -- DRAG for floating circle
     local circleDragStart, circleStartPos, isCircleDragging
     floatingCircle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch then
@@ -424,7 +381,7 @@ local function loadMainScript()
         end
     end)
 
-    print("Arsenal script loaded. Auto Fire: ON when aimbot enabled. Unlimited Ammo and Skins added.")
+    print("Arsenal script loaded. Features: ESP, Aimbot+Auto Fire, Long Jump, Unlimited Ammo, Skins. Password: astro")
 end
 
 -- PASSWORD CHECK
