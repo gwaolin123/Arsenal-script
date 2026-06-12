@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - WALLHACK AUTO ON, AIMBOT MANUAL, HIDE/SHOW GUI (CodeX/Hydrogen)
+-- ARSENAL WORKING SCRIPT - TOUCH FIXED, DRAG FIXED, BUTTONS WORKING
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -8,7 +8,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local VirtualUser = game:GetService("VirtualUser")
 
--- Settings (WALLHACK AUTO ON, others OFF)
+-- Settings
 local wallhackEnabled = true
 local aimbotEnabled = false
 local flyEnabled = false
@@ -24,7 +24,7 @@ screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 200, 0, 230)
-mainFrame.Position = UDim2.new(0, 10, 0, 80)
+mainFrame.Position = UDim2.new(0.1, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 2
@@ -92,7 +92,7 @@ speedBtn.Text = "SPEED: OFF"
 speedBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
 speedBtn.Parent = mainFrame
 
--- WALLHACK (ALWAYS ON)
+-- WALLHACK
 local wallhackObjects = {}
 local function createWallhack(player)
     if player == LocalPlayer then return end
@@ -108,9 +108,6 @@ local function createWallhack(player)
     distanceText.Size = 12
     distanceText.Center = true
     distanceText.Color = Color3.new(1, 1, 0)
-    box.Visible = true
-    nameTag.Visible = true
-    distanceText.Visible = true
     wallhackObjects[player] = {box = box, nameTag = nameTag, distance = distanceText}
     RunService.RenderStepped:Connect(function()
         if not wallhackEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
@@ -149,7 +146,7 @@ local function createWallhack(player)
     end)
 end
 
--- AIMBOT (MANUAL TOGGLE)
+-- AIMBOT
 local function getClosestEnemy3D()
     local closest = nil
     local shortestDist = math.huge
@@ -179,8 +176,7 @@ RunService.RenderStepped:Connect(function()
     if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
         local targetPos = target.Character.HumanoidRootPart.Position
         local lookVector = (targetPos - Camera.CFrame.Position).Unit
-        local newCFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + lookVector)
-        Camera.CFrame = Camera.CFrame:Lerp(newCFrame, 0.6)
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + lookVector)
         VirtualUser:Button1Down(Vector2.new(0,0))
         wait(0.01)
         VirtualUser:Button1Up(Vector2.new(0,0))
@@ -207,19 +203,6 @@ local function startFly()
     bodyGyro.CFrame = hrp.CFrame
 end
 
-UserInputService.InputBegan:Connect(function(input)
-    if not flyEnabled or not flying then return end
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local hrp = char.HumanoidRootPart
-    local speed = 100
-    if input.KeyCode == Enum.KeyCode.W then bodyVelocity.Velocity = hrp.CFrame.LookVector * speed end
-    if input.KeyCode == Enum.KeyCode.S then bodyVelocity.Velocity = hrp.CFrame.LookVector * -speed end
-    if input.KeyCode == Enum.KeyCode.A then bodyVelocity.Velocity = hrp.CFrame.RightVector * -speed end
-    if input.KeyCode == Enum.KeyCode.D then bodyVelocity.Velocity = hrp.CFrame.RightVector * speed end
-    if input.KeyCode == Enum.KeyCode.Space then bodyVelocity.Velocity = Vector3.new(0, speed, 0) end
-end)
-
 local function stopFly()
     if bodyVelocity then bodyVelocity:Destroy() end
     if bodyGyro then bodyGyro:Destroy() end
@@ -241,7 +224,7 @@ local function resetSpeed()
     end
 end
 
--- INIT WALLHACK
+-- INIT
 for _, player in pairs(Players:GetPlayers()) do
     createWallhack(player)
 end
@@ -257,29 +240,22 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- BUTTON HANDLERS
-local function setupButton(btn, callback)
-    btn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            callback()
-        end
-    end)
-    btn.MouseButton1Click:Connect(callback)
-end
-
-setupButton(wallBtn, function()
+-- BUTTON HANDLERS - USING ACTIVATED (works on mobile)
+wallBtn.Activated:Connect(function()
     wallhackEnabled = not wallhackEnabled
     wallBtn.Text = wallhackEnabled and "WALLHACK: ON" or "WALLHACK: OFF"
     wallBtn.BackgroundColor3 = wallhackEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    print("Wallhack: " .. tostring(wallhackEnabled))
 end)
 
-setupButton(aimBtn, function()
+aimBtn.Activated:Connect(function()
     aimbotEnabled = not aimbotEnabled
     aimBtn.Text = aimbotEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
     aimBtn.BackgroundColor3 = aimbotEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    print("Aimbot: " .. tostring(aimbotEnabled))
 end)
 
-setupButton(flyBtn, function()
+flyBtn.Activated:Connect(function()
     flyEnabled = not flyEnabled
     flyBtn.Text = flyEnabled and "FLY: ON" or "FLY: OFF"
     flyBtn.BackgroundColor3 = flyEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
@@ -290,9 +266,10 @@ setupButton(flyBtn, function()
         flying = false
         stopFly()
     end
+    print("Fly: " .. tostring(flyEnabled))
 end)
 
-setupButton(speedBtn, function()
+speedBtn.Activated:Connect(function()
     speedEnabled = not speedEnabled
     speedBtn.Text = speedEnabled and "SPEED: ON" or "SPEED: OFF"
     speedBtn.BackgroundColor3 = speedEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
@@ -301,43 +278,50 @@ setupButton(speedBtn, function()
     else
         resetSpeed()
     end
+    print("Speed: " .. tostring(speedEnabled))
 end)
 
-setupButton(hideBtn, function()
-    guiVisible = false
+hideBtn.Activated:Connect(function()
     mainFrame.Visible = false
     floatingCircle.Visible = true
 end)
 
-setupButton(floatingCircle, function()
-    guiVisible = true
+floatingCircle.Activated:Connect(function()
     mainFrame.Visible = true
     floatingCircle.Visible = false
 end)
 
--- DRAG for main frame
-local dragStart, startPos, dragging
+-- DRAG for main frame (using UIGripper or simple touch)
+local dragging = false
+local dragStart = nil
+local frameStart = nil
+
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = mainFrame.Position
+        frameStart = mainFrame.Position
     end
 end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(frameStart.X.Scale, frameStart.X.Offset + delta.X, frameStart.Y.Scale, frameStart.Y.Offset + delta.Y)
+    end
+end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.Touch then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
 
--- DRAG for floating circle
-local circleDragStart, circleStartPos, circleDragging
+-- DRAG for circle
+local circleDragging = false
+local circleDragStart = nil
+local circleStartPos = nil
+
 floatingCircle.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
         circleDragging = true
@@ -345,6 +329,7 @@ floatingCircle.InputBegan:Connect(function(input)
         circleStartPos = floatingCircle.Position
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if circleDragging and input.UserInputType == Enum.UserInputType.Touch then
         local delta = input.Position - circleDragStart
@@ -352,4 +337,10 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("Arsenal script loaded. WALLHACK AUTO ON. Aimbot is manual (OFF by default). Tap buttons to toggle. Tap ━ to hide GUI.")
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        circleDragging = false
+    end
+end)
+
+print("SCRIPT LOADED. Tap buttons to turn ON/OFF (text changes color). Drag the black box by touching anywhere on it. Wallhack ON by default.")
