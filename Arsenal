@@ -1,4 +1,4 @@
--- ARSENAL WORKING SCRIPT - TOUCH FIXED, DRAG FIXED, BUTTONS WORKING
+-- ARSENAL COMPLETE - ESP + AIMBOT + FLY + SPEED (FULLY WORKING)
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -8,17 +8,15 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local VirtualUser = game:GetService("VirtualUser")
 
--- Settings
-local wallhackEnabled = true
+local espEnabled = true
 local aimbotEnabled = false
 local flyEnabled = false
 local speedEnabled = false
 local speedValue = 50
-local guiVisible = true
 
 -- GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ArsenalScript"
+screenGui.Name = "ArsenalGUI"
 screenGui.Parent = game:GetService("CoreGui")
 screenGui.ResetOnSpawn = false
 
@@ -26,11 +24,10 @@ local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 200, 0, 230)
 mainFrame.Position = UDim2.new(0.1, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-mainFrame.BackgroundTransparency = 0.2
+mainFrame.BackgroundTransparency = 0.3
 mainFrame.BorderSizePixel = 2
 mainFrame.BorderColor3 = Color3.new(1, 0.5, 0)
 mainFrame.Parent = screenGui
-mainFrame.Active = true
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
@@ -39,115 +36,65 @@ title.TextColor3 = Color3.new(1, 1, 0)
 title.BackgroundTransparency = 1
 title.Parent = mainFrame
 
-local hideBtn = Instance.new("TextButton")
-hideBtn.Size = UDim2.new(0, 50, 0, 25)
-hideBtn.Position = UDim2.new(0.7, 0, 0, 2)
-hideBtn.Text = "━"
-hideBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-hideBtn.Parent = mainFrame
+local function createButton(name, y, text)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(0, 170, 0, 35)
+    btn.Position = UDim2.new(0, 15, 0, y)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
+    btn.Parent = mainFrame
+    return btn
+end
 
-local floatingCircle = Instance.new("ImageLabel")
-floatingCircle.Size = UDim2.new(0, 55, 0, 55)
-floatingCircle.Position = UDim2.new(0.02, 0, 0.85, 0)
-floatingCircle.BackgroundColor3 = Color3.new(1, 0.5, 0)
-floatingCircle.BackgroundTransparency = 0.2
-floatingCircle.Image = "rbxassetid://0"
-floatingCircle.Parent = screenGui
-floatingCircle.Visible = false
+local espBtn = createButton("EspBtn", 45, "ESP: ON")
+local aimBtn = createButton("AimBtn", 90, "AIMBOT: OFF")
+local flyBtn = createButton("FlyBtn", 135, "FLY: OFF")
+local speedBtn = createButton("SpeedBtn", 180, "SPEED: OFF")
 
-local circleText = Instance.new("TextLabel")
-circleText.Size = UDim2.new(1, 0, 1, 0)
-circleText.Text = "A"
-circleText.TextColor3 = Color3.new(1, 1, 1)
-circleText.TextSize = 28
-circleText.TextScaled = true
-circleText.BackgroundTransparency = 1
-circleText.Parent = floatingCircle
+espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
 
-local wallBtn = Instance.new("TextButton")
-wallBtn.Size = UDim2.new(0, 170, 0, 35)
-wallBtn.Position = UDim2.new(0, 15, 0, 45)
-wallBtn.Text = "WALLHACK: ON"
-wallBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-wallBtn.Parent = mainFrame
-
-local aimBtn = Instance.new("TextButton")
-aimBtn.Size = UDim2.new(0, 170, 0, 35)
-aimBtn.Position = UDim2.new(0, 15, 0, 90)
-aimBtn.Text = "AIMBOT: OFF"
-aimBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
-aimBtn.Parent = mainFrame
-
-local flyBtn = Instance.new("TextButton")
-flyBtn.Size = UDim2.new(0, 170, 0, 35)
-flyBtn.Position = UDim2.new(0, 15, 0, 135)
-flyBtn.Text = "FLY: OFF"
-flyBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
-flyBtn.Parent = mainFrame
-
-local speedBtn = Instance.new("TextButton")
-speedBtn.Size = UDim2.new(0, 170, 0, 35)
-speedBtn.Position = UDim2.new(0, 15, 0, 180)
-speedBtn.Text = "SPEED: OFF"
-speedBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
-speedBtn.Parent = mainFrame
-
--- WALLHACK
-local wallhackObjects = {}
-local function createWallhack(player)
-    if player == LocalPlayer then return end
-    local box = Drawing.new("Box")
-    local nameTag = Drawing.new("Text")
-    local distanceText = Drawing.new("Text")
-    box.Thickness = 2
-    box.Transparency = 1
-    box.Filled = false
-    nameTag.Size = 14
-    nameTag.Center = true
-    nameTag.Outline = true
-    distanceText.Size = 12
-    distanceText.Center = true
-    distanceText.Color = Color3.new(1, 1, 0)
-    wallhackObjects[player] = {box = box, nameTag = nameTag, distance = distanceText}
-    RunService.RenderStepped:Connect(function()
-        if not wallhackEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-            pcall(function()
-                if box then box.Visible = false end
-                if nameTag then nameTag.Visible = false end
-                if distanceText then distanceText.Visible = false end
-            end)
-            return
-        end
-        pcall(function()
-            local isEnemy = true
-            if player.Team and LocalPlayer.Team then
-                isEnemy = player.Team ~= LocalPlayer.Team
+-- ESP (Text labels on screen)
+local espLabels = {}
+local function updateESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if not espLabels[player] then
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(0, 120, 0, 22)
+                label.BackgroundColor3 = Color3.new(0, 0, 0)
+                label.BackgroundTransparency = 0.5
+                label.BorderSizePixel = 1
+                label.Parent = screenGui
+                label.Font = Enum.Font.GothamBold
+                label.TextSize = 13
+                espLabels[player] = label
             end
-            local boxColor = isEnemy and Color3.new(1, 0, 0) or Color3.new(0, 0.4, 1)
-            local nameColor = isEnemy and Color3.new(1, 0.5, 0.5) or Color3.new(0.5, 0.7, 1)
-            local rootPart = player.Character.HumanoidRootPart
-            local screenPos, _ = Camera:WorldToViewportPoint(rootPart.Position)
-            local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
-            local scale = 3 / math.max(distance, 1) * 5
-            local height = 5 * scale
-            local width = 3 * scale
-            box.Color = boxColor
-            box.Size = Vector2.new(width * 50, height * 50)
-            box.Position = Vector2.new(screenPos.X - width * 25, screenPos.Y - height * 25)
-            box.Visible = true
-            nameTag.Color = nameColor
-            nameTag.Text = player.Name .. " | " .. math.floor((player.Character.Humanoid and player.Character.Humanoid.Health) or 100)
-            nameTag.Position = Vector2.new(screenPos.X, screenPos.Y - height * 25 - 12)
-            nameTag.Visible = true
-            distanceText.Text = math.floor(distance) .. "m"
-            distanceText.Position = Vector2.new(screenPos.X, screenPos.Y + height * 25 + 8)
-            distanceText.Visible = true
-        end)
-    end)
+            
+            local label = espLabels[player]
+            if espEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                if onScreen then
+                    local isEnemy = true
+                    if player.Team and LocalPlayer.Team then
+                        isEnemy = player.Team ~= LocalPlayer.Team
+                    end
+                    label.TextColor3 = isEnemy and Color3.new(1, 0, 0) or Color3.new(0, 0.5, 1)
+                    label.Text = player.Name
+                    label.Position = UDim2.new(0, rootPos.X - 60, 0, rootPos.Y - 40)
+                    label.Visible = true
+                else
+                    label.Visible = false
+                end
+            else
+                if label then label.Visible = false end
+            end
+        end
+    end
 end
 
 -- AIMBOT
-local function getClosestEnemy3D()
+local function getClosestEnemy()
     local closest = nil
     local shortestDist = math.huge
     for _, player in pairs(Players:GetPlayers()) do
@@ -158,8 +105,7 @@ local function getClosestEnemy3D()
             end
             if isEnemy then
                 local enemyPos = player.Character.HumanoidRootPart.Position
-                local myPos = Camera.CFrame.Position
-                local dist = (enemyPos - myPos).Magnitude
+                local dist = (enemyPos - Camera.CFrame.Position).Magnitude
                 if dist < shortestDist then
                     shortestDist = dist
                     closest = player
@@ -171,44 +117,57 @@ local function getClosestEnemy3D()
 end
 
 RunService.RenderStepped:Connect(function()
-    if not aimbotEnabled then return end
-    local target = getClosestEnemy3D()
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local targetPos = target.Character.HumanoidRootPart.Position
-        local lookVector = (targetPos - Camera.CFrame.Position).Unit
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + lookVector)
-        VirtualUser:Button1Down(Vector2.new(0,0))
-        wait(0.01)
-        VirtualUser:Button1Up(Vector2.new(0,0))
+    updateESP()
+    if aimbotEnabled then
+        local target = getClosestEnemy()
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local targetPos = target.Character.HumanoidRootPart.Position
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+            VirtualUser:Button1Down(Vector2.new(0,0))
+            wait(0.01)
+            VirtualUser:Button1Up(Vector2.new(0,0))
+        end
     end
 end)
 
 -- FLY
 local flying = false
-local bodyVelocity = nil
+local bodyVel = nil
 local bodyGyro = nil
-local function startFly()
+local function enableFly()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local hrp = char.HumanoidRootPart
-    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyVel then bodyVel:Destroy() end
     if bodyGyro then bodyGyro:Destroy() end
-    bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    bodyVelocity.Parent = hrp
+    bodyVel = Instance.new("BodyVelocity")
+    bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bodyVel.Velocity = Vector3.new(0, 0, 0)
+    bodyVel.Parent = hrp
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     bodyGyro.Parent = hrp
     bodyGyro.CFrame = hrp.CFrame
 end
-
-local function stopFly()
-    if bodyVelocity then bodyVelocity:Destroy() end
+local function disableFly()
+    if bodyVel then bodyVel:Destroy() end
     if bodyGyro then bodyGyro:Destroy() end
-    bodyVelocity = nil
+    bodyVel = nil
     bodyGyro = nil
 end
+
+UserInputService.InputBegan:Connect(function(input)
+    if not flyEnabled then return end
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local speed = 100
+    if input.KeyCode == Enum.KeyCode.W then bodyVel.Velocity = hrp.CFrame.LookVector * speed end
+    if input.KeyCode == Enum.KeyCode.S then bodyVel.Velocity = hrp.CFrame.LookVector * -speed end
+    if input.KeyCode == Enum.KeyCode.A then bodyVel.Velocity = hrp.CFrame.RightVector * -speed end
+    if input.KeyCode == Enum.KeyCode.D then bodyVel.Velocity = hrp.CFrame.RightVector * speed end
+    if input.KeyCode == Enum.KeyCode.Space then bodyVel.Velocity = Vector3.new(0, speed, 0) end
+end)
 
 -- SPEED
 local function setSpeed()
@@ -224,35 +183,22 @@ local function resetSpeed()
     end
 end
 
--- INIT
-for _, player in pairs(Players:GetPlayers()) do
-    createWallhack(player)
-end
-Players.PlayerAdded:Connect(createWallhack)
-Players.PlayerRemoving:Connect(function(player)
-    if wallhackObjects[player] then
-        pcall(function()
-            wallhackObjects[player].box:Remove()
-            wallhackObjects[player].nameTag:Remove()
-            wallhackObjects[player].distance:Remove()
-        end)
-        wallhackObjects[player] = nil
+-- BUTTON HANDLERS (USING ACTIVATED)
+espBtn.Activated:Connect(function()
+    espEnabled = not espEnabled
+    espBtn.Text = espEnabled and "ESP: ON" or "ESP: OFF"
+    espBtn.BackgroundColor3 = espEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    if not espEnabled then
+        for _, label in pairs(espLabels) do
+            if label then label.Visible = false end
+        end
     end
-end)
-
--- BUTTON HANDLERS - USING ACTIVATED (works on mobile)
-wallBtn.Activated:Connect(function()
-    wallhackEnabled = not wallhackEnabled
-    wallBtn.Text = wallhackEnabled and "WALLHACK: ON" or "WALLHACK: OFF"
-    wallBtn.BackgroundColor3 = wallhackEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-    print("Wallhack: " .. tostring(wallhackEnabled))
 end)
 
 aimBtn.Activated:Connect(function()
     aimbotEnabled = not aimbotEnabled
     aimBtn.Text = aimbotEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
     aimBtn.BackgroundColor3 = aimbotEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-    print("Aimbot: " .. tostring(aimbotEnabled))
 end)
 
 flyBtn.Activated:Connect(function()
@@ -260,13 +206,10 @@ flyBtn.Activated:Connect(function()
     flyBtn.Text = flyEnabled and "FLY: ON" or "FLY: OFF"
     flyBtn.BackgroundColor3 = flyEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     if flyEnabled then
-        flying = true
-        startFly()
+        enableFly()
     else
-        flying = false
-        stopFly()
+        disableFly()
     end
-    print("Fly: " .. tostring(flyEnabled))
 end)
 
 speedBtn.Activated:Connect(function()
@@ -278,34 +221,23 @@ speedBtn.Activated:Connect(function()
     else
         resetSpeed()
     end
-    print("Speed: " .. tostring(speedEnabled))
 end)
 
-hideBtn.Activated:Connect(function()
-    mainFrame.Visible = false
-    floatingCircle.Visible = true
-end)
-
-floatingCircle.Activated:Connect(function()
-    mainFrame.Visible = true
-    floatingCircle.Visible = false
-end)
-
--- DRAG for main frame (using UIGripper or simple touch)
-local dragging = false
+-- DRAG FUNCTIONALITY (touch and drag anywhere on mainFrame)
 local dragStart = nil
 local frameStart = nil
+local isDragging = false
 
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
+        isDragging = true
         dragStart = input.Position
         frameStart = mainFrame.Position
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.Touch then
+    if isDragging and input.UserInputType == Enum.UserInputType.Touch then
         local delta = input.Position - dragStart
         mainFrame.Position = UDim2.new(frameStart.X.Scale, frameStart.X.Offset + delta.X, frameStart.Y.Scale, frameStart.Y.Offset + delta.Y)
     end
@@ -313,34 +245,16 @@ end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
+        isDragging = false
     end
 end)
 
--- DRAG for circle
-local circleDragging = false
-local circleDragStart = nil
-local circleStartPos = nil
-
-floatingCircle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        circleDragging = true
-        circleDragStart = input.Position
-        circleStartPos = floatingCircle.Position
+-- Cleanup on player leave
+Players.PlayerRemoving:Connect(function(player)
+    if espLabels[player] then
+        espLabels[player]:Destroy()
+        espLabels[player] = nil
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if circleDragging and input.UserInputType == Enum.UserInputType.Touch then
-        local delta = input.Position - circleDragStart
-        floatingCircle.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch then
-        circleDragging = false
-    end
-end)
-
-print("SCRIPT LOADED. Tap buttons to turn ON/OFF (text changes color). Drag the black box by touching anywhere on it. Wallhack ON by default.")
+print("SCRIPT LOADED. Touch buttons to toggle features. Drag the black box by touching anywhere on it. ESP: Red=enemy, Blue=teammate.")
