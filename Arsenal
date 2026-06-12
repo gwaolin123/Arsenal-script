@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - AIMBOT ONLY VISIBLE ENEMIES (not behind walls)
+-- ARSENAL SCRIPT - HIDE/SHOW GUI + AIMBOT VISIBLE ENEMIES ONLY
 -- Password: astro
 
 local Players = game:GetService("Players")
@@ -13,6 +13,7 @@ local aimbotEnabled = false
 local flyEnabled = false
 local speedEnabled = false
 local speedValue = 50
+local guiVisible = true
 
 -- GUI
 local screenGui = Instance.new("ScreenGui")
@@ -21,7 +22,7 @@ screenGui.Parent = game:GetService("CoreGui")
 screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 230)
+mainFrame.Size = UDim2.new(0, 200, 0, 260)
 mainFrame.Position = UDim2.new(0.1, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.3
@@ -35,6 +36,31 @@ title.Text = "ARSENAL | astro"
 title.TextColor3 = Color3.new(1, 1, 0)
 title.BackgroundTransparency = 1
 title.Parent = mainFrame
+
+local hideBtn = Instance.new("TextButton")
+hideBtn.Size = UDim2.new(0, 50, 0, 25)
+hideBtn.Position = UDim2.new(0.7, 0, 0, 2)
+hideBtn.Text = "━"
+hideBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+hideBtn.Parent = mainFrame
+
+local floatingCircle = Instance.new("ImageLabel")
+floatingCircle.Size = UDim2.new(0, 55, 0, 55)
+floatingCircle.Position = UDim2.new(0.02, 0, 0.85, 0)
+floatingCircle.BackgroundColor3 = Color3.new(1, 0.5, 0)
+floatingCircle.BackgroundTransparency = 0.2
+floatingCircle.Image = "rbxassetid://0"
+floatingCircle.Parent = screenGui
+floatingCircle.Visible = false
+
+local circleText = Instance.new("TextLabel")
+circleText.Size = UDim2.new(1, 0, 1, 0)
+circleText.Text = "A"
+circleText.TextColor3 = Color3.new(1, 1, 1)
+circleText.TextSize = 28
+circleText.TextScaled = true
+circleText.BackgroundTransparency = 1
+circleText.Parent = floatingCircle
 
 local function createButton(name, y, text)
     local btn = Instance.new("TextButton")
@@ -54,18 +80,16 @@ local speedBtn = createButton("SpeedBtn", 180, "SPEED: OFF")
 
 espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
 
--- Check if enemy is visible (not behind wall)
+-- Check if enemy is visible
 local function isVisible(player)
     local char = player.Character
     if not char or not char:FindFirstChild("Head") then return false end
-    
     local headPos = char.Head.Position
     local cameraPos = Camera.CFrame.Position
     local direction = (headPos - cameraPos).Unit
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
     raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, char}
-    
     local rayResult = workspace:Raycast(cameraPos, direction * 500, raycastParams)
     if rayResult then
         local distanceToHit = (rayResult.Position - cameraPos).Magnitude
@@ -75,7 +99,7 @@ local function isVisible(player)
     return true
 end
 
--- ESP (Text labels on screen)
+-- ESP
 local espLabels = {}
 local function updateESP()
     for _, player in pairs(Players:GetPlayers()) do
@@ -91,7 +115,6 @@ local function updateESP()
                 label.TextSize = 13
                 espLabels[player] = label
             end
-            
             local label = espLabels[player]
             if espEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
@@ -244,7 +267,18 @@ speedBtn.Activated:Connect(function()
     end
 end)
 
--- DRAG FUNCTIONALITY
+-- HIDE/SHOW GUI (Hide button and floating circle)
+hideBtn.Activated:Connect(function()
+    mainFrame.Visible = false
+    floatingCircle.Visible = true
+end)
+
+floatingCircle.Activated:Connect(function()
+    mainFrame.Visible = true
+    floatingCircle.Visible = false
+end)
+
+-- DRAG for main frame
 local dragStart = nil
 local frameStart = nil
 local isDragging = false
@@ -270,6 +304,32 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
+-- DRAG for floating circle
+local circleDragStart = nil
+local circleStartPos = nil
+local isCircleDragging = false
+
+floatingCircle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isCircleDragging = true
+        circleDragStart = input.Position
+        circleStartPos = floatingCircle.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isCircleDragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - circleDragStart
+        floatingCircle.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isCircleDragging = false
+    end
+end)
+
 -- Cleanup
 Players.PlayerRemoving:Connect(function(player)
     if espLabels[player] then
@@ -278,4 +338,4 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("SCRIPT LOADED. Aimbot now only targets enemies NOT behind walls/cover. Touch buttons to toggle features.")
+print("SCRIPT LOADED. Press ━ button to hide GUI (circle appears). Tap circle to show GUI again. Drag both main GUI and circle.")
