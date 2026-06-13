@@ -1,4 +1,4 @@
--- ARSENAL COMPLETE SCRIPT - ESP + AIMBOT + FLY + ANTI-AIM + BULLET DODGE
+-- ARSENAL SCRIPT - AIMBOT ONLY VISIBLE ENEMIES + ANTI-AIM + BULLET DODGE
 -- Password: astro
 
 -- LOGIN GUI
@@ -147,7 +147,29 @@ local function loadMainScript()
         return true
     end
 
-    -- ESP
+    -- CHECK IF ENEMY IS VISIBLE (NOT BEHIND WALL)
+    local function isVisible(enemy)
+        local char = enemy.Character
+        if not char or not char:FindFirstChild("Head") then return false end
+        
+        local headPos = char.Head.Position
+        local cameraPos = Camera.CFrame.Position
+        local direction = (headPos - cameraPos).Unit
+        
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, char}
+        
+        local rayResult = workspace:Raycast(cameraPos, direction * 500, raycastParams)
+        if rayResult then
+            local distanceToHit = (rayResult.Position - cameraPos).Magnitude
+            local distanceToTarget = (headPos - cameraPos).Magnitude
+            return distanceToHit >= distanceToTarget - 2
+        end
+        return true
+    end
+
+    -- ESP (always visible through walls)
     local espLabels = {}
     local function updateESP()
         for _, player in pairs(Players:GetPlayers()) do
@@ -181,13 +203,13 @@ local function loadMainScript()
         end
     end
 
-    -- AIMBOT (targets enemies only)
-    local function getClosestEnemy()
+    -- AIMBOT (ONLY VISIBLE ENEMIES - NOT THROUGH WALLS)
+    local function getClosestVisibleEnemy()
         local closest = nil
         local shortestDist = math.huge
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                if isEnemy(player) then
+                if isEnemy(player) and isVisible(player) then
                     local enemyPos = player.Character.HumanoidRootPart.Position
                     local dist = (enemyPos - Camera.CFrame.Position).Magnitude
                     if dist < shortestDist then
@@ -203,7 +225,7 @@ local function loadMainScript()
     RunService.RenderStepped:Connect(function()
         updateESP()
         if aimbotEnabled then
-            local target = getClosestEnemy()
+            local target = getClosestVisibleEnemy()
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local targetPos = target.Character.HumanoidRootPart.Position
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
@@ -214,7 +236,7 @@ local function loadMainScript()
         end
     end)
 
-    -- FLY (WASD control)
+    -- FLY
     local flying = false
     local bodyVel = nil
     local bodyGyro = nil
@@ -253,7 +275,7 @@ local function loadMainScript()
         if input.KeyCode == Enum.KeyCode.Space then bodyVel.Velocity = Vector3.new(0, speed, 0) end
     end)
 
-    -- ANTI-AIM (randomizes your hitbox/rotation to avoid headshots)
+    -- ANTI-AIM
     local function antiAim()
         if not antiAimEnabled then return end
         pcall(function()
@@ -267,7 +289,7 @@ local function loadMainScript()
 
     RunService.RenderStepped:Connect(antiAim)
 
-    -- BULLET DODGE (detects bullets and moves you)
+    -- BULLET DODGE
     local function bulletDodge()
         if not bulletDodgeEnabled then return end
         pcall(function()
@@ -275,13 +297,11 @@ local function loadMainScript()
             if not char or not char:FindFirstChild("HumanoidRootPart") then return end
             local hrp = char.HumanoidRootPart
             
-            -- Detect bullets (projectiles)
             for _, v in pairs(workspace:GetDescendants()) do
                 if v:IsA("Part") and (v.Name:find("Bullet") or v.Name:find("Projectile")) then
                     local bulletPos = v.Position
                     local dist = (bulletPos - hrp.Position).Magnitude
                     if dist < 15 then
-                        -- Dodge sideways
                         local dodgeDirection = hrp.CFrame.RightVector
                         hrp.CFrame = hrp.CFrame + dodgeDirection * 10
                         VirtualUser:Button2Down(Vector2.new(0,0))
@@ -396,7 +416,7 @@ local function loadMainScript()
         end
     end)
 
-    print("Arsenal script loaded. ESP, Aimbot, Fly, Anti-Aim, Bullet Dodge active.")
+    print("Arsenal script loaded. Aimbot ONLY targets enemies in open area (not behind walls). ESP sees through walls. Anti-Aim and Bullet Dodge active.")
 end
 
 -- PASSWORD CHECK
