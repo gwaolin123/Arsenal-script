@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - AIMBOT ONLY VISIBLE ENEMIES + ANTI-AIM + BULLET DODGE
+-- ARSENAL COMPLETE SCRIPT - AIMBOT OPEN AREA ONLY + ESP + FLY + ANTI-AIM + BULLET DODGE
 -- Password: astro
 
 -- LOGIN GUI
@@ -169,7 +169,7 @@ local function loadMainScript()
         return true
     end
 
-    -- ESP (always visible through walls)
+    -- ESP (sees through walls)
     local espLabels = {}
     local function updateESP()
         for _, player in pairs(Players:GetPlayers()) do
@@ -203,7 +203,7 @@ local function loadMainScript()
         end
     end
 
-    -- AIMBOT (ONLY VISIBLE ENEMIES - NOT THROUGH WALLS)
+    -- AIMBOT (ONLY VISIBLE ENEMIES - OPEN AREA ONLY)
     local function getClosestVisibleEnemy()
         local closest = nil
         local shortestDist = math.huge
@@ -236,7 +236,7 @@ local function loadMainScript()
         end
     end)
 
-    -- FLY
+    -- FLY (WASD)
     local flying = false
     local bodyVel = nil
     local bodyGyro = nil
@@ -286,7 +286,6 @@ local function loadMainScript()
             end
         end)
     end
-
     RunService.RenderStepped:Connect(antiAim)
 
     -- BULLET DODGE
@@ -296,11 +295,9 @@ local function loadMainScript()
             local char = LocalPlayer.Character
             if not char or not char:FindFirstChild("HumanoidRootPart") then return end
             local hrp = char.HumanoidRootPart
-            
             for _, v in pairs(workspace:GetDescendants()) do
                 if v:IsA("Part") and (v.Name:find("Bullet") or v.Name:find("Projectile")) then
-                    local bulletPos = v.Position
-                    local dist = (bulletPos - hrp.Position).Magnitude
+                    local dist = (v.Position - hrp.Position).Magnitude
                     if dist < 15 then
                         local dodgeDirection = hrp.CFrame.RightVector
                         hrp.CFrame = hrp.CFrame + dodgeDirection * 10
@@ -312,7 +309,6 @@ local function loadMainScript()
             end
         end)
     end
-
     RunService.RenderStepped:Connect(bulletDodge)
 
     -- BUTTONS
@@ -416,7 +412,7 @@ local function loadMainScript()
         end
     end)
 
-    print("Arsenal script loaded. Aimbot ONLY targets enemies in open area (not behind walls). ESP sees through walls. Anti-Aim and Bullet Dodge active.")
+    print("Arsenal script loaded. Aimbot ONLY visible enemies (open area). ESP sees through walls.")
 end
 
 -- PASSWORD CHECK
