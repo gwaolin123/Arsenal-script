@@ -1,4 +1,4 @@
--- ARSENAL SCRIPT - AUTO BAN CHEATERS + UNLI JUMP + SKINS NO LAG
+-- ARSENAL COMPLETE SCRIPT - ESP + AIMBOT + FLY + ANTI-AIM + BULLET DODGE
 -- Password: astro
 
 -- LOGIN GUI
@@ -56,14 +56,27 @@ local function loadMainScript()
     local LocalPlayer = Players.LocalPlayer
     local Camera = workspace.CurrentCamera
     local VirtualUser = game:GetService("VirtualUser")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
     local espEnabled = true
     local aimbotEnabled = false
-    local unliJumpEnabled = false
-    local ammoEnabled = false
-    local skinsEnabled = false
-    local autoBanEnabled = false
+    local flyEnabled = false
+    local antiAimEnabled = false
+    local bulletDodgeEnabled = false
+
+    -- FPS BOOSTER
+    local function boostFPS()
+        pcall(function()
+            game:GetService("Lighting").ShadowSoftness = 0
+            game:GetService("Lighting").Technology = Enum.Technology.Compatibility
+            settings().Rendering.QualityLevel = 1
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("Decal") or v:IsA("Texture") or v:IsA("ParticleEmitter") then
+                    v.Enabled = false
+                end
+            end
+        end)
+    end
+    boostFPS()
 
     -- GUI
     local screenGui = Instance.new("ScreenGui")
@@ -119,10 +132,9 @@ local function loadMainScript()
 
     local espBtn = createButton("EspBtn", 35, "ESP: ON")
     local aimBtn = createButton("AimBtn", 75, "AIMBOT: OFF")
-    local jumpBtn = createButton("JumpBtn", 115, "UNLI JUMP: OFF")
-    local ammoBtn = createButton("AmmoBtn", 155, "UNLIMITED AMMO: OFF")
-    local skinBtn = createButton("SkinBtn", 195, "SKINS: OFF")
-    local banBtn = createButton("BanBtn", 235, "AUTO BAN CHEATERS: OFF")
+    local flyBtn = createButton("FlyBtn", 115, "FLY: OFF")
+    local antiAimBtn = createButton("AntiAimBtn", 155, "ANTI-AIM: OFF")
+    local dodgeBtn = createButton("DodgeBtn", 195, "BULLET DODGE: OFF")
 
     espBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
 
@@ -133,63 +145,6 @@ local function loadMainScript()
             return player.Team ~= LocalPlayer.Team
         end
         return true
-    end
-
-    -- CHECK VISIBLE
-    local function isVisible(enemy)
-        local char = enemy.Character
-        if not char or not char:FindFirstChild("Head") then return false end
-        local headPos = char.Head.Position
-        local cameraPos = Camera.CFrame.Position
-        local direction = (headPos - cameraPos).Unit
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-        raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, char}
-        local rayResult = workspace:Raycast(cameraPos, direction * 500, raycastParams)
-        if rayResult then
-            local distanceToHit = (rayResult.Position - cameraPos).Magnitude
-            local distanceToTarget = (headPos - cameraPos).Magnitude
-            return distanceToHit >= distanceToTarget - 2
-        end
-        return true
-    end
-
-    -- DETECT CHEATERS (speed, fly, etc)
-    local function detectCheater(player)
-        local char = player.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-        
-        -- Check for speed hack (walk speed > 25)
-        local humanoid = char:FindFirstChild("Humanoid")
-        if humanoid and humanoid.WalkSpeed > 25 then
-            return true
-        end
-        
-        -- Check for fly (no ground touch for > 5 seconds while moving)
-        local hrp = char.HumanoidRootPart
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {char}
-        local ray = workspace:Raycast(hrp.Position, Vector3.new(0, -10, 0), rayParams)
-        if not ray and hrp.Velocity.Y > 0 then
-            return true
-        end
-        
-        return false
-    end
-
-    -- AUTO BAN CHEATERS (reports them automatically)
-    local function autoBanCheaters()
-        if not autoBanEnabled then return end
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and detectCheater(player) then
-                pcall(function()
-                    -- Send report to server
-                    ReplicatedStorage.Remotes.ReportAbuse:FireServer(player.Name, "Cheating")
-                    -- Also kick them locally (visual only)
-                    player:Kick("Detected as cheater by anti-cheat system")
-                end)
-            end
-        end
     end
 
     -- ESP
@@ -226,13 +181,13 @@ local function loadMainScript()
         end
     end
 
-    -- AIMBOT + AUTO FIRE
-    local function getClosestVisibleEnemy()
+    -- AIMBOT (targets enemies only)
+    local function getClosestEnemy()
         local closest = nil
         local shortestDist = math.huge
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                if isEnemy(player) and isVisible(player) then
+                if isEnemy(player) then
                     local enemyPos = player.Character.HumanoidRootPart.Position
                     local dist = (enemyPos - Camera.CFrame.Position).Magnitude
                     if dist < shortestDist then
@@ -247,68 +202,98 @@ local function loadMainScript()
 
     RunService.RenderStepped:Connect(function()
         updateESP()
-        autoBanCheaters()
         if aimbotEnabled then
-            local target = getClosestVisibleEnemy()
+            local target = getClosestEnemy()
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local targetPos = target.Character.HumanoidRootPart.Position
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
                 VirtualUser:Button1Down(Vector2.new(0,0))
-                task.wait(0.01)
+                wait(0.01)
                 VirtualUser:Button1Up(Vector2.new(0,0))
             end
         end
     end)
 
-    -- UNLI JUMP (infinite jumps)
-    local function enableUnliJump()
-        if not unliJumpEnabled then return end
+    -- FLY (WASD control)
+    local flying = false
+    local bodyVel = nil
+    local bodyGyro = nil
+    local function enableFly()
         local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            local humanoid = char.Humanoid
-            humanoid.JumpPower = 60
-            -- Allow infinite jumps
-            humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-            humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-        end
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = char.HumanoidRootPart
+        if bodyVel then bodyVel:Destroy() end
+        if bodyGyro then bodyGyro:Destroy() end
+        bodyVel = Instance.new("BodyVelocity")
+        bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        bodyVel.Velocity = Vector3.new(0, 0, 0)
+        bodyVel.Parent = hrp
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+        bodyGyro.Parent = hrp
+        bodyGyro.CFrame = hrp.CFrame
     end
-    
-    -- Jump reset on space press
-    UserInputService.JumpRequest:Connect(function()
-        if unliJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end)
-    
-    RunService.RenderStepped:Connect(enableUnliJump)
+    local function disableFly()
+        if bodyVel then bodyVel:Destroy() end
+        if bodyGyro then bodyGyro:Destroy() end
+        bodyVel = nil
+        bodyGyro = nil
+    end
 
-    -- UNLIMITED AMMO
-    local function enableUnlimitedAmmo()
-        if not ammoEnabled then return end
+    UserInputService.InputBegan:Connect(function(input)
+        if not flyEnabled then return end
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = char.HumanoidRootPart
+        local speed = 80
+        if input.KeyCode == Enum.KeyCode.W then bodyVel.Velocity = hrp.CFrame.LookVector * speed end
+        if input.KeyCode == Enum.KeyCode.S then bodyVel.Velocity = hrp.CFrame.LookVector * -speed end
+        if input.KeyCode == Enum.KeyCode.A then bodyVel.Velocity = hrp.CFrame.RightVector * -speed end
+        if input.KeyCode == Enum.KeyCode.D then bodyVel.Velocity = hrp.CFrame.RightVector * speed end
+        if input.KeyCode == Enum.KeyCode.Space then bodyVel.Velocity = Vector3.new(0, speed, 0) end
+    end)
+
+    -- ANTI-AIM (randomizes your hitbox/rotation to avoid headshots)
+    local function antiAim()
+        if not antiAimEnabled then return end
         pcall(function()
-            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Tool")
-            if tool and tool:FindFirstChild("Ammo") then
-                tool.Ammo.Value = 999
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local randomAngle = math.random(0, 360)
+                char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(randomAngle), 0)
             end
         end)
     end
-    RunService.RenderStepped:Connect(enableUnlimitedAmmo)
 
-    -- SKINS (optimized - no lag)
-    local skinApplied = false
-    local function enableSkins()
-        if not skinsEnabled or skinApplied then return end
+    RunService.RenderStepped:Connect(antiAim)
+
+    -- BULLET DODGE (detects bullets and moves you)
+    local function bulletDodge()
+        if not bulletDodgeEnabled then return end
         pcall(function()
-            -- Apply only once to prevent lag
-            for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-                if v:IsA("Tool") and v:FindFirstChild("SkinChanger") then
-                    v.SkinChanger.Value = "Golden"
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local hrp = char.HumanoidRootPart
+            
+            -- Detect bullets (projectiles)
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("Part") and (v.Name:find("Bullet") or v.Name:find("Projectile")) then
+                    local bulletPos = v.Position
+                    local dist = (bulletPos - hrp.Position).Magnitude
+                    if dist < 15 then
+                        -- Dodge sideways
+                        local dodgeDirection = hrp.CFrame.RightVector
+                        hrp.CFrame = hrp.CFrame + dodgeDirection * 10
+                        VirtualUser:Button2Down(Vector2.new(0,0))
+                        wait(0.05)
+                        VirtualUser:Button2Up(Vector2.new(0,0))
+                    end
                 end
             end
-            skinApplied = true
         end)
     end
-    RunService.RenderStepped:Connect(enableSkins)
+
+    RunService.RenderStepped:Connect(bulletDodge)
 
     -- BUTTONS
     espBtn.Activated:Connect(function()
@@ -328,31 +313,27 @@ local function loadMainScript()
         aimBtn.BackgroundColor3 = aimbotEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     end)
 
-    jumpBtn.Activated:Connect(function()
-        unliJumpEnabled = not unliJumpEnabled
-        jumpBtn.Text = unliJumpEnabled and "UNLI JUMP: ON" or "UNLI JUMP: OFF"
-        jumpBtn.BackgroundColor3 = unliJumpEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-    end)
-
-    ammoBtn.Activated:Connect(function()
-        ammoEnabled = not ammoEnabled
-        ammoBtn.Text = ammoEnabled and "UNLIMITED AMMO: ON" or "UNLIMITED AMMO: OFF"
-        ammoBtn.BackgroundColor3 = ammoEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-    end)
-
-    skinBtn.Activated:Connect(function()
-        skinsEnabled = not skinsEnabled
-        skinBtn.Text = skinsEnabled and "SKINS: ON" or "SKINS: OFF"
-        skinBtn.BackgroundColor3 = skinsEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
-        if skinsEnabled then
-            skinApplied = false
+    flyBtn.Activated:Connect(function()
+        flyEnabled = not flyEnabled
+        flyBtn.Text = flyEnabled and "FLY: ON" or "FLY: OFF"
+        flyBtn.BackgroundColor3 = flyEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+        if flyEnabled then
+            enableFly()
+        else
+            disableFly()
         end
     end)
 
-    banBtn.Activated:Connect(function()
-        autoBanEnabled = not autoBanEnabled
-        banBtn.Text = autoBanEnabled and "AUTO BAN CHEATERS: ON" or "AUTO BAN CHEATERS: OFF"
-        banBtn.BackgroundColor3 = autoBanEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    antiAimBtn.Activated:Connect(function()
+        antiAimEnabled = not antiAimEnabled
+        antiAimBtn.Text = antiAimEnabled and "ANTI-AIM: ON" or "ANTI-AIM: OFF"
+        antiAimBtn.BackgroundColor3 = antiAimEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
+    end)
+
+    dodgeBtn.Activated:Connect(function()
+        bulletDodgeEnabled = not bulletDodgeEnabled
+        dodgeBtn.Text = bulletDodgeEnabled and "BULLET DODGE: ON" or "BULLET DODGE: OFF"
+        dodgeBtn.BackgroundColor3 = bulletDodgeEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.6, 0.2, 0.2)
     end)
 
     -- HIDE/SHOW
@@ -415,7 +396,7 @@ local function loadMainScript()
         end
     end)
 
-    print("Arsenal script loaded. Features: ESP, Aimbot+Auto Fire, Unli Jump, Unlimited Ammo, Skins, Auto Ban Cheaters")
+    print("Arsenal script loaded. ESP, Aimbot, Fly, Anti-Aim, Bullet Dodge active.")
 end
 
 -- PASSWORD CHECK
